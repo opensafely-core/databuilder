@@ -1,5 +1,3 @@
-import datetime
-
 from databuilder.dsl import IdColumn
 from databuilder.query_language import Dataset, DateColumn, PatientTable
 
@@ -19,22 +17,24 @@ patients = Patients()
 
 
 def test_simple_dataset() -> None:
-    year_of_birth = patients.date_of_birth
+    year_of_birth = patients.date_of_birth.year
     dataset = Dataset()
-    dataset.set_population(
-        year_of_birth <= datetime.date(2000, 1, 1)
-    )  # TODO: why does this not typecheck?
+    dataset.set_population(year_of_birth <= 2000)  # TODO: why does this not typecheck?
     dataset.year_of_birth = year_of_birth
 
     assert dataset.compile() == {
-        "year_of_birth": SelectColumn(
-            name="date_of_birth", source=SelectPatientTable("patients")
+        "year_of_birth": Function.YearFromDate(
+            source=SelectColumn(
+                name="date_of_birth", source=SelectPatientTable("patients")
+            )
         ),
         "population": Function.LE(
-            lhs=SelectColumn(
-                name="date_of_birth", source=SelectPatientTable("patients")
+            lhs=Function.YearFromDate(
+                source=SelectColumn(
+                    name="date_of_birth", source=SelectPatientTable("patients")
+                )
             ),
-            rhs=Value(datetime.date(2000, 1, 1)),
+            rhs=Value(2000),
         ),
     }
 
@@ -45,8 +45,10 @@ def test_get_column_from_patient_table():
     )
 
 
-def test_date_comparison():
-    assert (patients.date_of_birth <= datetime.date(2000, 1, 1)).qm_node == Function.LE(
-        lhs=SelectColumn(name="date_of_birth", source=SelectPatientTable("patients")),
-        rhs=Value(datetime.date(2000, 1, 1)),
+def test_year_comparison():
+    assert (patients.date_of_birth.year <= 2000).qm_node == Function.LE(
+        lhs=Function.YearFromDate(
+            SelectColumn(name="date_of_birth", source=SelectPatientTable("patients"))
+        ),
+        rhs=Value(2000),
     )

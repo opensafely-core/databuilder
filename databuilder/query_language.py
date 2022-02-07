@@ -10,7 +10,7 @@ This contains just enough of erhQL to be able to extract the following dataset:
 
 from __future__ import annotations
 
-from .query_model import Function, SelectColumn, SelectPatientTable, Value
+from .query_model import Function, Node, SelectColumn, SelectPatientTable, Value
 
 
 class Dataset:
@@ -27,7 +27,7 @@ class Dataset:
         else:
             super().__setattr__(name, value)
 
-    def compile(self) -> dict[str, qm.Node]:  # noqa A003
+    def compile(self) -> dict[str, Node]:  # noqa A003
         return {name: variable.qm_node for name, variable in self.variables.items()}
 
 
@@ -49,7 +49,7 @@ class PatientTable(Table):
 
 
 class Column:
-    def __init__(self, name: str, series_type):
+    def __init__(self, name: str, series_type: Series):
         self.name = name
         self.series_type = series_type
 
@@ -75,6 +75,12 @@ class BoolSeries(Series):
     pass
 
 
-class DateSeries(Series):
+class IntSeries(Series):
     def __le__(self, other):
         return BoolSeries(Function.LE(lhs=self.qm_node, rhs=Value(other)))
+
+
+class DateSeries(Series):
+    @property
+    def year(self):
+        return IntSeries(Function.YearFromDate(source=self.qm_node))
