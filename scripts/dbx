@@ -221,7 +221,7 @@ def create(name, wait, output_url, timeout):
         databricks(["clusters", "start", "--cluster-id", c.cluster_id])
     else:
         click.echo(
-            "No {name} cluster found, and refusing to create one as not using Community Edition.\n"
+            f"No {name} cluster found, and refusing to create one as not using Community Edition.\n"
             "You will need to create one called 'opensafely-test' via the web UI."
         )
         sys.exit(1)
