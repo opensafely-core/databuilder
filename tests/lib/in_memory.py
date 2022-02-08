@@ -70,7 +70,7 @@ class InMemoryQueryEngine(BaseQueryEngine):
         value = node.value
         if isinstance(value, frozenset):
             return {self.visit(v) for v in value}
-        if re.match(r"\d\d\d\d-\d\d-\d\d", value):
+        if isinstance(value, str) and re.match(r"\d\d\d\d-\d\d-\d\d", value):
             return date.fromisoformat(value)
         return value
 
@@ -159,7 +159,14 @@ class InMemoryQueryEngine(BaseQueryEngine):
         assert False
 
     def visit_Not(self, node):
-        assert False
+        def op(value):
+            return {
+                True: False,
+                None: None,
+                False: True,
+            }[value]
+
+        return self.visit(node.source).unary_op(op)
 
     def visit_IsNull(self, node):
         assert False
