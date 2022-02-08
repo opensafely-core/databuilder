@@ -4,12 +4,17 @@ import re
 from collections import defaultdict
 from datetime import date
 
-import rich
-
 from databuilder.query_engines.base import BaseQueryEngine
 from databuilder.query_model import Position
 
 from .util import iter_flatten
+
+# import rich
+
+
+T = True
+F = False
+N = None
 
 
 class InMemoryQueryEngine(BaseQueryEngine):
@@ -24,15 +29,15 @@ class InMemoryQueryEngine(BaseQueryEngine):
         }
 
         for name, node in self.column_definitions.items():
-            print("-" * 80)
-            print(name)
-            rich.print(node)
+            # print("-" * 80)
+            # print(name)
+            # rich.print(node)
             ps = self.visit(node)
-            print(ps)
+            # print(ps)
             name_to_series[name] = ps
 
-        pf = PatientFrame(name_to_series)
-        print(pf)
+        # pf = PatientFrame(name_to_series)
+        # print(pf)
 
         records = []
         for patient in self.all_patients:
@@ -121,10 +126,22 @@ class InMemoryQueryEngine(BaseQueryEngine):
         assert False
 
     def visit_Count(self, node):
-        assert False
+        frame = self.visit(node.source)
+        return PatientSeries(
+            {
+                patient: len(group)
+                for patient, group in frame.patient_to_groups().items()
+            }
+        )
 
     def visit_Sum(self, node):
-        assert False
+        frame = self.visit(node.source)
+        return PatientSeries(
+            {
+                patient: sum(value for event, value in group)
+                for patient, group in frame.patient_to_groups().items()
+            }
+        )
 
     def visit_CombineAsSet(self, node):
         assert False
@@ -132,7 +149,13 @@ class InMemoryQueryEngine(BaseQueryEngine):
     def visit_binary_op(self, node, op):
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
-        return lhs.binary_op(op, rhs)
+
+        def op1(lhs, rhs):
+            if lhs is None or lhs is None:
+                return None
+            return op(lhs, rhs)
+
+        return lhs.binary_op(op1, rhs)
 
     def visit_EQ(self, node):
         return self.visit_binary_op(node, operator.eq)
@@ -153,23 +176,56 @@ class InMemoryQueryEngine(BaseQueryEngine):
         return self.visit_binary_op(node, operator.ge)
 
     def visit_And(self, node):
-        assert False
+        def op(lhs, rhs):
+            return {
+                (T, T): T,
+                (T, N): N,
+                (T, F): F,
+                (N, T): N,
+                (N, N): N,
+                (N, F): F,
+                (F, T): F,
+                (F, N): F,
+                (F, F): F,
+            }[lhs, rhs]
+
+        lhs = self.visit(node.lhs)
+        rhs = self.visit(node.rhs)
+        return lhs.binary_op(op, rhs)
 
     def visit_Or(self, node):
-        assert False
+        def op(lhs, rhs):
+            return {
+                (T, T): T,
+                (T, N): T,
+                (T, F): T,
+                (N, T): T,
+                (N, N): N,
+                (N, F): N,
+                (F, T): T,
+                (F, N): N,
+                (F, F): F,
+            }[lhs, rhs]
+
+        lhs = self.visit(node.lhs)
+        rhs = self.visit(node.rhs)
+        return lhs.binary_op(op, rhs)
 
     def visit_Not(self, node):
         def op(value):
             return {
-                True: False,
-                None: None,
-                False: True,
+                T: F,
+                N: N,
+                F: T,
             }[value]
 
         return self.visit(node.source).unary_op(op)
 
     def visit_IsNull(self, node):
-        assert False
+        def op(value):
+            return value is None
+
+        return self.visit(node.source).unary_op(op)
 
     def visit_Add(self, node):
         assert False
@@ -198,7 +254,21 @@ class InMemoryQueryEngine(BaseQueryEngine):
         return lhs.binary_op(lambda needle, haystack: needle in haystack, rhs)
 
     def visit_Categorise(self, node):
-        assert False
+        patient_to_value = {}
+
+        for category, category_node in node.categories.items():
+            series = self.visit(category_node)
+            for patient, value in series.patient_to_value.items():
+                if value and patient not in patient_to_value:
+                    patient_to_value[patient] = category
+
+        default = self.visit(node.default)
+
+        for patient in self.all_patients:
+            if patient not in patient_to_value:
+                patient_to_value[patient] = default
+
+        return PatientSeries(patient_to_value)
 
 
 class InMemoryDatabase:
