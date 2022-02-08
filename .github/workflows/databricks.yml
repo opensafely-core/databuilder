@@ -21,7 +21,7 @@ jobs:
       - uses: extractions/setup-just@v1
       - name: Login to databricks
         run: |
-            echo <<< EOF > ~/.databrickscfg
+            cat << EOF > ~/.databrickscfg
             [DEFAULT]
             host = https://drtl-theta.cloud.databricks.com
             username = simon.davy@thedatalab.org
