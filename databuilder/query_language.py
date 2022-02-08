@@ -38,7 +38,8 @@ class Table:
     def __getattribute__(self, item):
         attr = super().__getattribute__(item)
         if isinstance(attr, Column):
-            return attr.series_on(self)
+            # This is a syntactic convenience to allow columns to be treated as series within dataset definitions.
+            return attr.as_series(self)
         else:
             return attr
 
@@ -53,7 +54,7 @@ class Column:
         self.name = name
         self.series_type = series_type
 
-    def series_on(self, table):
+    def as_series(self, table):
         return self.series_type(SelectColumn(name=self.name, source=table.qm_node))
 
 
