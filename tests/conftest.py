@@ -8,6 +8,7 @@ from databuilder.query_engines.spark import SparkQueryEngine
 
 from .lib.databases import make_database, make_spark_database, wait_for_database
 from .lib.docker import Containers
+from .lib.in_memory import InMemoryDatabase, InMemoryQueryEngine
 from .lib.mock_backend import backend_factory
 from .lib.util import extract
 
@@ -50,6 +51,11 @@ def spark_database(containers):
     yield database
 
 
+@pytest.fixture(scope="session")
+def in_memory_database():
+    yield InMemoryDatabase()
+
+
 @pytest.fixture(autouse=True)
 def cleanup_register():
     yield
@@ -80,13 +86,16 @@ class QueryEngineFixture:
 
 
 @pytest.fixture(
-    scope="session", params=["mssql", pytest.param("spark", marks=pytest.mark.spark)]
+    scope="session",
+    params=["mssql", pytest.param("spark", marks=pytest.mark.spark), "in_memory"],
 )
-def engine(request, database, spark_database):
+def engine(request, database, spark_database, in_memory_database):
     name = request.param
     if name == "mssql":
         return QueryEngineFixture(name, database, MssqlQueryEngine)
     elif name == "spark":
         return QueryEngineFixture(name, spark_database, SparkQueryEngine)
+    elif name == "in_memory":
+        return QueryEngineFixture(name, in_memory_database, InMemoryQueryEngine)
     else:
         assert False
