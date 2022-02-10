@@ -1,5 +1,6 @@
 import contextlib
 import operator
+import os
 import re
 from collections import defaultdict
 from datetime import date
@@ -9,12 +10,12 @@ from databuilder.query_model import Position
 
 from .util import iter_flatten
 
-# import rich
-
-
 T = True
 F = False
 N = None
+
+
+DEBUG = os.environ.get("DEBUG")
 
 
 class InMemoryQueryEngine(BaseQueryEngine):
@@ -29,15 +30,19 @@ class InMemoryQueryEngine(BaseQueryEngine):
         }
 
         for name, node in self.column_definitions.items():
-            # print("-" * 80)
-            # print(name)
-            # rich.print(node)
             ps = self.visit(node)
-            # print(ps)
             name_to_series[name] = ps
+            if DEBUG:
+                print("-" * 80)
+                print(name)
+                print("-" * 40)
+                print(node)
+                print("-" * 40)
+                print(ps)
 
-        # pf = PatientFrame(name_to_series)
-        # print(pf)
+        pf = PatientFrame(name_to_series)
+        if DEBUG:
+            print(pf)
 
         records = []
         for patient in self.all_patients:
@@ -116,8 +121,10 @@ class InMemoryQueryEngine(BaseQueryEngine):
         return frame.filter_to_patient_frame(patient_to_event)
 
     def visit_Exists(self, node):
-        frame = self.visit(node.source).patient_to_events
-        return PatientSeries({patient: True for patient in frame})
+        patients = self.visit(node.source).patient_to_events.keys()
+        return PatientSeries(
+            {patient: patient in patients for patient in self.all_patients}
+        )
 
     def visit_Min(self, node):
         assert False
@@ -127,10 +134,11 @@ class InMemoryQueryEngine(BaseQueryEngine):
 
     def visit_Count(self, node):
         frame = self.visit(node.source)
+        patient_to_groups = frame.patient_to_groups()
         return PatientSeries(
             {
-                patient: len(group)
-                for patient, group in frame.patient_to_groups().items()
+                patient: len(patient_to_groups.get(patient, []))
+                for patient in self.all_patients
             }
         )
 
@@ -144,7 +152,13 @@ class InMemoryQueryEngine(BaseQueryEngine):
         )
 
     def visit_CombineAsSet(self, node):
-        assert False
+        frame = self.visit(node.source)
+        return PatientSeries(
+            {
+                patient: {value for _, value in group}
+                for patient, group in frame.patient_to_groups().items()
+            }
+        )
 
     def visit_binary_op(self, node, op):
         lhs = self.visit(node.lhs)
@@ -191,6 +205,7 @@ class InMemoryQueryEngine(BaseQueryEngine):
 
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
+        # breakpoint()
         return lhs.binary_op(op, rhs)
 
     def visit_Or(self, node):
@@ -246,7 +261,20 @@ class InMemoryQueryEngine(BaseQueryEngine):
         assert False
 
     def visit_DateDifference(self, node):
-        assert False
+        start = self.visit(node.start)
+        end = self.visit(node.end)
+        units = self.visit(node.units)
+
+        def op(start, end):
+            if start is None or end is None:
+                return None
+            delta = end - start
+            if units == "years":
+                return int(delta.days / 365.25)
+            else:
+                assert False, units
+
+        return start.binary_op(op, end)
 
     def visit_In(self, node):
         lhs = self.visit(node.lhs)
@@ -369,12 +397,12 @@ class PatientFrame:
 
     def __repr__(self):
         rows = []
-        rows.append(" | ".join(col_name.ljust(13) for col_name in self.name_to_series))
-        rows.append("-+-".join("-" * 13 for _ in self.name_to_series))
+        rows.append(" | ".join(col_name.ljust(17) for col_name in self.name_to_series))
+        rows.append("-+-".join("-" * 17 for _ in self.name_to_series))
         for patient in sorted(self.patient_id.patient_to_value):
             rows.append(
                 " | ".join(
-                    str(self.name_to_series[col_name][patient]).ljust(13)
+                    str(self.name_to_series[col_name][patient]).ljust(17)
                     for col_name in self.name_to_series
                 )
             )
@@ -418,12 +446,12 @@ class EventFrame:
 
     def __repr__(self):
         rows = []
-        rows.append(" | ".join(col_name.ljust(13) for col_name in self.name_to_series))
-        rows.append("-+-".join("-" * 13 for _ in self.name_to_series))
+        rows.append(" | ".join(col_name.ljust(17) for col_name in self.name_to_series))
+        rows.append("-+-".join("-" * 17 for _ in self.name_to_series))
         for event in sorted(self.patient_id.event_to_value):
             rows.append(
                 " | ".join(
-                    str(self.name_to_series[col_name][event]).ljust(13)
+                    str(self.name_to_series[col_name][event]).ljust(17)
                     for col_name in self.name_to_series
                 )
             )
