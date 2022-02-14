@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import date
 
 from databuilder.query_engines.base import BaseQueryEngine
-from databuilder.query_model import Position
+from databuilder.query_model import Position, Value
 
 from .util import iter_flatten
 
@@ -49,13 +49,16 @@ class InMemoryQueryEngine(BaseQueryEngine):
             if name_to_series["population"][patient]:
                 records.append(
                     {
-                        col_name: name_to_series[col_name][patient]
+                        col_name: self.extract_value(name_to_series[col_name][patient])
                         for col_name in name_to_series
                         if col_name != "population"
                     }
                 )
 
         yield records
+
+    def extract_value(self, value):
+        return value.value if isinstance(value, Value) else value
 
     @property
     def database(self):
@@ -283,11 +286,9 @@ class InMemoryQueryEngine(BaseQueryEngine):
                 if value and patient not in patient_to_value:
                     patient_to_value[patient] = category
 
-        default = self.visit(node.default)
-
         for patient in self.all_patients:
             if patient not in patient_to_value:
-                patient_to_value[patient] = default
+                patient_to_value[patient] = node.default
 
         return PatientSeries(patient_to_value)
 
