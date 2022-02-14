@@ -160,34 +160,28 @@ class InMemoryQueryEngine(BaseQueryEngine):
             }
         )
 
-    def visit_binary_op(self, node, op):
+    def visit_binary_op_with_null(self, node, op):
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
-
-        def op1(lhs, rhs):
-            if lhs is None or lhs is None:
-                return None
-            return op(lhs, rhs)
-
-        return lhs.binary_op(op1, rhs)
+        return lhs.binary_op_with_null(op, rhs)
 
     def visit_EQ(self, node):
-        return self.visit_binary_op(node, operator.eq)
+        return self.visit_binary_op_with_null(node, operator.eq)
 
     def visit_NE(self, node):
-        return self.visit_binary_op(node, operator.ne)
+        return self.visit_binary_op_with_null(node, operator.ne)
 
     def visit_LT(self, node):
-        return self.visit_binary_op(node, operator.lt)
+        return self.visit_binary_op_with_null(node, operator.lt)
 
     def visit_LE(self, node):
-        return self.visit_binary_op(node, operator.le)
+        return self.visit_binary_op_with_null(node, operator.le)
 
     def visit_GT(self, node):
-        return self.visit_binary_op(node, operator.gt)
+        return self.visit_binary_op_with_null(node, operator.gt)
 
     def visit_GE(self, node):
-        return self.visit_binary_op(node, operator.ge)
+        return self.visit_binary_op_with_null(node, operator.ge)
 
     def visit_And(self, node):
         def op(lhs, rhs):
@@ -205,7 +199,6 @@ class InMemoryQueryEngine(BaseQueryEngine):
 
         lhs = self.visit(node.lhs)
         rhs = self.visit(node.rhs)
-        # breakpoint()
         return lhs.binary_op(op, rhs)
 
     def visit_Or(self, node):
@@ -522,6 +515,14 @@ class PatientSeries:
         }
         return PatientSeries(new_patient_to_value)
 
+    def binary_op_with_null(self, fn, other):
+        def fn_with_null(lhs, rhs):
+            if lhs is None or rhs is None:
+                return None
+            return fn(lhs, rhs)
+
+        return self.binary_op(fn_with_null, other)
+
     def make_series_from_value(self, value):
         new_patient_to_value = {
             patient: value for patient in self.patient_to_value.keys()
@@ -565,6 +566,14 @@ class EventSeries:
         new_event_to_value = {event: fn(self[event], other[event]) for event in events}
         new_patient_to_events = self.make_patient_to_events(new_event_to_value)
         return EventSeries(new_event_to_value, new_patient_to_events)
+
+    def binary_op_with_null(self, fn, other):
+        def fn_with_null(lhs, rhs):
+            if lhs is None or rhs is None:
+                return None
+            return fn(lhs, rhs)
+
+        return self.binary_op(fn_with_null, other)
 
     def make_series_from_value(self, value):
         new_event_to_value = {event: value for event in self.event_to_value.keys()}
