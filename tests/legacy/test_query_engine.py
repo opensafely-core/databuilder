@@ -388,6 +388,11 @@ def test_simple_filters(engine, data, filtered_table, expected):
 
 @pytest.mark.parametrize("filter_value", [[170, 180], (170, 180), {170, 180}])
 def test_is_in_filter(engine, filter_value, request):
+    if engine.name == "in_memory":
+        # The cohort in this test filters a patient-dimensioned table, which would not
+        # be allowed in the new QM.
+        pytest.xfail()
+
     data = [
         patient(1, ctv3_event("Code1", "2021-01-01", 10), height=180),  # in
         patient(2, ctv3_event("Code2", "2021-01-02", 20), height=170),  # not in
@@ -529,6 +534,11 @@ def test_filter_between_other_query_values(engine):
 
 
 def test_date_in_range_filter(engine):
+    if engine.name == "in_memory":
+        # This test uses count(), whose behaviour will change in the new QM.  (See
+        # test_aggregation.)
+        pytest.xfail()
+
     input_data = [
         # (9999-12-31 is the default TPP null value)
         # registraion start date before target date; no end date - included
@@ -571,6 +581,12 @@ def test_date_in_range_filter(engine):
 
 
 def test_in_filter_on_query_values(engine):
+    if engine.name == "in_memory":
+        # Filtering on code filters on both a code's value and system.  The QM should
+        # not treat codes specially, and in the new QM, two separate filters should be
+        # created.
+        pytest.xfail()
+
     # set up input data for 2 patients, with positive test dates and clinical event results
     input_data = [
         patient(
@@ -707,6 +723,16 @@ def test_not_in_filter_on_query_values(engine):
     ids=[],
 )
 def test_aggregation(engine, aggregation, column, expected):
+    if engine.name == "in_memory":
+        if aggregation == "exists":
+            # The old QM returns None for patients that do not match a condition, but we
+            # want the new QM to return False instead.
+            pytest.xfail()
+        if aggregation == "count":
+            # The old QM returns None for patients that do not match a condition, but we
+            # want the new QM to return zero instead.
+            pytest.xfail()
+
     input_data = [
         patient(
             1,
@@ -900,6 +926,12 @@ def test_categorise_nested_comparisons(engine):
 
 def test_categorise_on_truthiness(engine):
     """Test truthiness of a Value from an exists aggregation"""
+
+    if engine.name == "in_memory":
+        # This test uses exists(), whose behaviour will change in the new QM.  (See
+        # test_aggregation.)
+        pytest.xfail()
+
     input_data = [
         patient(1, ctv3_event("abc")),
         patient(2, ctv3_event("xyz")),
@@ -926,6 +958,12 @@ def test_categorise_on_truthiness(engine):
 
 def test_categorise_on_truthiness_from_filter(engine):
     """Test truthiness of a Value from a filtered value"""
+
+    if engine.name == "in_memory":
+        # The old QM wraps each value in a categorise() in a __ne__ comparison against
+        # None.  The new QM expects each value to be a boolean series.
+        pytest.xfail()
+
     input_data = [
         patient(1, ctv3_event("abc")),
         patient(2, ctv3_event("xyz")),
@@ -955,6 +993,12 @@ def test_categorise_on_truthiness_from_filter(engine):
 
 def test_categorise_multiple_truthiness_values(engine):
     """Test truthiness of a Value from a filtered value"""
+
+    if engine.name == "in_memory":
+        # This test uses exists(), whose behaviour will change in the new QM.  (See
+        # test_aggregation.)
+        pytest.xfail()
+
     input_data = [
         patient(1, ctv3_event("abc"), positive_test(True)),
         patient(2, ctv3_event("xyz"), positive_test(False)),
@@ -1016,6 +1060,11 @@ def test_categorise_invert(engine):
 
 
 def test_categorise_invert_truthiness_values(engine):
+    if engine.name == "in_memory":
+        # This test uses exists(), whose behaviour will change in the new QM.  (See
+        # test_aggregation.)
+        pytest.xfail()
+
     input_data = [
         patient(1, ctv3_event("abc")),
         patient(2, ctv3_event("xyz")),
@@ -1044,6 +1093,11 @@ def test_categorise_invert_truthiness_values(engine):
 
 
 def test_categorise_invert_combined_values(engine):
+    if engine.name == "in_memory":
+        # This test uses exists(), whose behaviour will change in the new QM.  (See
+        # test_aggregation.)
+        pytest.xfail()
+
     input_data = [
         patient(1, ctv3_event("abc"), positive_test(True)),
         patient(2, ctv3_event("xyz"), positive_test(False)),
@@ -1073,6 +1127,11 @@ def test_categorise_invert_combined_values(engine):
 
 
 def test_categorise_double_invert(engine):
+    if engine.name == "in_memory":
+        # The old QM wraps each value in a categorise() in a __ne__ comparison against
+        # None.  The new QM expects each value to be a boolean series.
+        pytest.xfail()
+
     input_data = [
         patient(1, ctv3_event("abc")),
         patient(2, ctv3_event("xyz")),
@@ -1111,6 +1170,12 @@ def test_categorise_multiple_truthiness_categories(engine):
     ValueFromRow is a Row, which can't be sorted.  THis test checks the workaround for
     this scenario.
     """
+
+    if engine.name == "in_memory":
+        # The old QM wraps each value in a categorise() in a __ne__ comparison against
+        # None.  The new QM expects each value to be a boolean series.
+        pytest.xfail()
+
     input_data = [
         patient(1, ctv3_event("abc")),
         patient(2, ctv3_event("xyz"), ctv3_event("lmn")),
