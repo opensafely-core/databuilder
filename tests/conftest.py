@@ -68,6 +68,7 @@ class QueryEngineFixture:
         self.database = database
         self.query_engine_class = query_engine_class
         self.backend = backend_factory(query_engine_class)
+        self.database.backend = self.backend
 
     def setup(self, *items):
         return self.database.setup(*items)

@@ -5,6 +5,8 @@ import re
 from collections import defaultdict
 from datetime import date
 
+import sqlalchemy
+
 from databuilder.query_engines.base import BaseQueryEngine
 from databuilder.query_model import Position, Value
 
@@ -303,49 +305,17 @@ class InMemoryDatabase:
             "positive_tests": [],
         }
 
-        def maybe_date(s):
-            return date.fromisoformat(s) if s else s
+        def get_value(item, col):
+            val = getattr(item, col.key)
+            if val and isinstance(col.type, sqlalchemy.types.Date):
+                val = date.fromisoformat(val)
+            return val
 
         for item in iter_flatten(input_data):
             self.all_patients.add(item.PatientId)
-            if type(item).__name__ == "Patients":
-                records["patients"].append(
-                    (
-                        item.PatientId,
-                        item.Height,
-                        maybe_date(item.DateOfBirth),
-                        item.Sex,
-                    )
-                )
-            elif type(item).__name__ == "RegistrationHistory":
-                records["practice_registrations"].append(
-                    (
-                        item.PatientId,
-                        item.StpId,
-                        maybe_date(item.StartDate),
-                        maybe_date(item.EndDate),
-                    )
-                )
-            elif type(item).__name__ == "CTV3Events":
-                records["clinical_events"].append(
-                    (
-                        item.PatientId,
-                        item.EventCode,
-                        item.System,
-                        maybe_date(item.Date),
-                        item.ResultValue,
-                    )
-                )
-            elif type(item).__name__ == "AllTests":
-                records["positive_tests"].append(
-                    (
-                        item.PatientId,
-                        item.PositiveResult,
-                        maybe_date(item.TestDate),
-                    )
-                )
-            else:
-                assert False, item
+            records[item.__table__.name].append(
+                [get_value(item, col) for col in item.__table__.columns]
+            )
 
         self.tables = {
             "patients": PatientFrame.from_records(
