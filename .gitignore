@@ -98,6 +98,8 @@ htmlcov
 # Virtual environments
 .venv/
 venv/
+sample-researchs
+/.run/private-cohortextractor-v2-sro-measure.run.xml
 
 # Docs
 public_docs.json

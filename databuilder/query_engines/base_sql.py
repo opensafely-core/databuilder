@@ -36,6 +36,7 @@ import contextlib
 import copy
 import dataclasses
 import datetime
+import os
 import typing
 from collections import defaultdict
 from functools import cached_property
@@ -593,7 +594,12 @@ class BaseSQLQueryEngine(BaseQueryEngine):
         # dialect the query engine will have been written for and tested with and we
         # don't want to allow global config changes to alter this
         engine_url._get_entrypoint = lambda: self.sqlalchemy_dialect
-        engine = sqlalchemy.create_engine(engine_url, future=True)
+
+        autocommit = os.environ.get('ENABLE_ISOLATION_LEVEL_AUTOCOMMIT', default="0") == "1"
+        if autocommit:
+            engine = sqlalchemy.create_engine(engine_url, future=True, isolation_level="AUTOCOMMIT")
+        else:
+            engine = sqlalchemy.create_engine(engine_url, future=True)
         # The above relies on abusing SQLAlchemy internals so it's possible it will
         # break in future -- we want to know immediately if it does
         assert isinstance(engine.dialect, self.sqlalchemy_dialect)
