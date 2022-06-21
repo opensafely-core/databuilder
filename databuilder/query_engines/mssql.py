@@ -25,6 +25,13 @@ class MSSQLQueryEngine(BaseSQLQueryEngine):
         # Tell SQLAlchemy that the result is a date without doing any CASTing in the SQL
         return sqlalchemy.type_coerce(new_date, sqlalchemy_types.Date())
 
+    def to_first_of_month(self, date):
+        new_date = sqlalchemy.func.dateadd(
+            sqlalchemy.text("day"), 1, sqlalchemy.func.eomonth(date, -1)
+        )
+        # Tell SQLAlchemy that the result is a date without doing any CASTing in the SQL
+        return sqlalchemy.type_coerce(new_date, sqlalchemy_types.Date())
+
     def reify_query(self, query):
         # Define a table object with the same columns as the query
         table_name = self.next_intermediate_table_name()

@@ -101,3 +101,24 @@ def test_difference_in_years(spec_test):
             5: None,
         },
     )
+
+
+def test_to_first_of_month(spec_test):
+    table_data = {
+        p: """
+              |     d1
+            --+------------
+            1 | 1990-01-01
+            2 | 1990-01-31
+            3 |
+            """,
+    }
+    spec_test(
+        table_data,
+        p.d1.to_first_of_month(),
+        {
+            1: date(1990, 1, 1),
+            2: date(1990, 1, 1),
+            3: None,
+        },
+    )

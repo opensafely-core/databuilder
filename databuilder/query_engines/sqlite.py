@@ -19,3 +19,8 @@ class SQLiteQueryEngine(BaseSQLQueryEngine):
         new_date = sqlalchemy.func.date(date, modifier)
         # Tell SQLAlchemy that the result is a date without doing any CASTing in the SQL
         return sqlalchemy.type_coerce(new_date, sqlalchemy_types.Date())
+
+    def to_first_of_month(self, date):
+        new_date = sqlalchemy.func.date(date, "start of month")
+        # Tell SQLAlchemy that the result is a date without doing any CASTing in the SQL
+        return sqlalchemy.type_coerce(new_date, sqlalchemy_types.Date())
