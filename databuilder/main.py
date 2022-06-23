@@ -9,6 +9,7 @@ import structlog
 from . import query_language as ql
 from .backends import BACKENDS
 from .definition.base import dataset_registry
+from .lib.databases import InMemorySQLiteDatabase
 from .validate_dummy_data import validate_dummy_data_file, validate_file_types_match
 
 log = structlog.getLogger()
@@ -63,7 +64,14 @@ def validate_dataset(definition_file, output_file, backend_id):
 
 def load_tutorial_data():
     log.info("Loading tutorial dataset")
-    raise NotImplementedError
+    d = InMemorySQLiteDatabase()
+    log.info(f"Initialised database {d}")
+
+    database_url = d.host_url()
+    log.info(f"URL: {database_url}")
+    test_connection("tutorial", database_url)
+
+    log.warning("Doing nothing")
 
 
 def generate_measures(
