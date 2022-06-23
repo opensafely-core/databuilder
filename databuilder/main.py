@@ -1,5 +1,6 @@
 import csv
 import importlib.util
+import os
 import shutil
 import sys
 from contextlib import contextmanager
@@ -10,6 +11,7 @@ from . import query_language as ql
 from .backends import BACKENDS
 from .definition.base import dataset_registry
 from .lib.databases import InMemorySQLiteDatabase
+from .lib.tpp_schema import patient
 from .validate_dummy_data import validate_dummy_data_file, validate_file_types_match
 
 log = structlog.getLogger()
@@ -62,7 +64,7 @@ def validate_dataset(definition_file, output_file, backend_id):
             f.write(f"{str(entry)}\n")
 
 
-def load_tutorial_data():
+def load_tutorial_data(definition_file="definition.py", filename="tutorial.csv"):
     log.info("Loading tutorial dataset")
     d = InMemorySQLiteDatabase()
     log.info(f"Initialised database {d}")
@@ -71,7 +73,24 @@ def load_tutorial_data():
     log.info(f"URL: {database_url}")
     test_connection("tutorial", database_url)
 
-    log.warning("Doing nothing")
+    log.info("Adding data")
+    patients = []
+    with open(filename) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            print(row)
+            a_patient = patient()
+            patients.append(a_patient)
+
+    d.setup([patients])
+    log.info("Done")
+    generate_dataset(
+        definition_file,
+        "output",
+        "tutorial",
+        database_url,
+        os.environ.get("TEMP_DATABASE_URL"),
+    )
 
 
 def generate_measures(
