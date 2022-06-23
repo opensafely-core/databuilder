@@ -63,6 +63,7 @@ class BaseBackend:
         # TODO: We currently ignore the `schema` argument here. But I think we should
         # move towards having the supplied schema define the column types or, if not
         # that, then we should validate that the types match.
+        print(self.tables)
         return self.tables[table_name].get_expression(table_name)
 
 

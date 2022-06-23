@@ -31,5 +31,5 @@ class Patients(TableContract):
             "Patient's year and month of death, provided in format YYYY-MM-01."
             "The day will always be the first of the month."
         ),
-        constraints=[NotNullConstraint()],
+        constraints=[FirstOfMonthConstraint()],
     )

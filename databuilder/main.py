@@ -1,9 +1,9 @@
 import csv
 import importlib.util
-import os
 import shutil
 import sys
 from contextlib import contextmanager
+from pathlib import Path
 
 import structlog
 
@@ -11,7 +11,7 @@ from . import query_language as ql
 from .backends import BACKENDS
 from .definition.base import dataset_registry
 from .lib.databases import InMemorySQLiteDatabase
-from .lib.tpp_schema import patient
+from .lib.tutorial_schema import patient
 from .validate_dummy_data import validate_dummy_data_file, validate_file_types_match
 
 log = structlog.getLogger()
@@ -85,11 +85,11 @@ def load_tutorial_data(definition_file="definition.py", filename="tutorial.csv")
     d.setup([patients])
     log.info("Done")
     generate_dataset(
-        definition_file,
-        "output",
+        Path(definition_file),
+        Path("output"),
         "tutorial",
         database_url,
-        os.environ.get("TEMP_DATABASE_URL"),
+        temporary_database=None,
     )
 
 
