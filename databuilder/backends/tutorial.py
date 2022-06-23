@@ -1,4 +1,4 @@
-from ..contracts import contracts
+from ..contracts import universal
 from ..query_engines.sqlite import SQLiteQueryEngine
 from .base import BaseBackend, Column, MappedTable
 
@@ -12,8 +12,8 @@ class TutorialBackend(BaseBackend):
     query_engine_class = SQLiteQueryEngine
     patient_join_column = "patient_id"
 
-    patient_demographics = MappedTable(
-        implements=contracts.PatientDemographics,
+    patients = MappedTable(
+        implements=universal.Patients,
         source="patients",
         columns=dict(
             sex=Column("varchar", source="sex"),
