@@ -7,6 +7,7 @@ from .backends import BACKENDS
 from .main import (
     generate_dataset,
     generate_measures,
+    load_tutorial_data,
     pass_dummy_data,
     test_connection,
     validate_dataset,
@@ -58,6 +59,8 @@ def main(args=None):
             backend=options.backend,
             url=options.url,
         )
+    elif options.which == "load-tutorial-data":
+        load_tutorial_data()
     elif options.which == "print-help":
         parser.print_help()
     else:
@@ -75,6 +78,7 @@ def build_parser():
     add_dump_dataset_sql(subparsers)
     add_generate_measures(subparsers)
     add_test_connection(subparsers)
+    add_load_tutorial_data(subparsers)
 
     return parser
 
@@ -161,6 +165,18 @@ def add_test_connection(subparsers):
         "-u",
         help="db url",
         default=os.environ.get("DATABASE_URL"),
+    )
+
+
+def add_load_tutorial_data(subparsers):
+    parsers = subparsers.add_parser(
+        "load-tutorial-data", help="Load data for working with tutorial"
+    )
+    parsers.set_defaults(which="load-tutorial-data")
+    parsers.add_argument(
+        "--input",
+        help="Path and filename of the input file",
+        type=Path,
     )
 
 

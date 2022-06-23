@@ -61,6 +61,11 @@ def validate_dataset(definition_file, output_file, backend_id):
             f.write(f"{str(entry)}\n")
 
 
+def load_tutorial_data():
+    log.info("Loading tutorial dataset")
+    raise NotImplementedError
+
+
 def generate_measures(
     definition_path, input_file, dataset_file
 ):  # pragma: no cover (measures not implemented)
