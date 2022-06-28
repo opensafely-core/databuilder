@@ -201,6 +201,10 @@ cases = [
         Function.DateSubtractDays(Value(datetime.date(2021, 5, 4)), Value(40)),
     ),
     (
+        datetime.date(2021, 1, 1),
+        Function.ToFirstOfYear(Value(datetime.date(2021, 5, 4))),
+    ),
+    (
         2022,
         Function.YearFromDate(Value(datetime.date(2022, 4, 29))),
     ),
