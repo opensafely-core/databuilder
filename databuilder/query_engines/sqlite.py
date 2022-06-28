@@ -18,3 +18,6 @@ class SQLiteQueryEngine(BaseSQLQueryEngine):
         num_days_str = sqlalchemy.cast(num_days, sqlalchemy_types.String)
         modifier = num_days_str.concat(" days")
         return SQLFunction("DATE", date, modifier, type_=sqlalchemy_types.Date)
+
+    def to_first_of_month(self, date):
+        return SQLFunction("DATE", date, "start of month", type_=sqlalchemy_types.Date)

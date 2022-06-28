@@ -28,6 +28,15 @@ class MSSQLQueryEngine(BaseSQLQueryEngine):
             type_=sqlalchemy_types.Date,
         )
 
+    def to_first_of_month(self, date):
+        return SQLFunction(
+            "DATEADD",
+            sqlalchemy.text("day"),
+            1,
+            SQLFunction("EOMONTH", date, -1),
+            type_=sqlalchemy_types.Date,
+        )
+
     def reify_query(self, query):
         # Define a table object with the same columns as the query
         table_name = self.next_intermediate_table_name()

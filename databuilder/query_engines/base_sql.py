@@ -287,6 +287,13 @@ class BaseSQLQueryEngine(BaseQueryEngine):
     def date_subtract_days(self, date, num_days):
         return self.date_add_days(date, -num_days)
 
+    @get_sql.register(Function.ToFirstOfMonth)
+    def get_sql_to_first_of_month(self, node):
+        return self.to_first_of_month(self.get_expr(node.source))
+
+    def to_first_of_month(self, date):
+        raise NotImplementedError()
+
     @get_sql.register(SelectColumn)
     def get_sql_select_column(self, node):
         table = self.get_table(node.source)
