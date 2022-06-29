@@ -223,6 +223,11 @@ def date_subtract_days(date, num_days):
     return date - datetime.timedelta(days=num_days)
 
 
+@register_op(Function.ToFirstOfYear)
+def to_first_of_year(date):
+    return date.replace(day=1, month=1)
+
+
 register_op(Function.Not)(operator.not_)
 register_op(Function.Negate)(operator.neg)
 register_op(Function.EQ)(operator.eq)

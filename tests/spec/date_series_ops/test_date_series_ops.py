@@ -101,3 +101,26 @@ def test_difference_in_years(spec_test):
             5: None,
         },
     )
+
+
+def test_to_first_of_year(spec_test):
+    table_data = {
+        p: """
+              |     d1
+            --+------------
+            1 | 1990-01-01
+            2 | 2000-12-15
+            3 | 2020-12-31
+            4 |
+            """,
+    }
+    spec_test(
+        table_data,
+        p.d1.to_first_of_year(),
+        {
+            1: date(1990, 1, 1),
+            2: date(2000, 1, 1),
+            3: date(2020, 1, 1),
+            4: None,
+        },
+    )
