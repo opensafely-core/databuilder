@@ -58,7 +58,7 @@ def test_dump_dataset_sql_happy_path(study, mssql_database):
 
 def test_dump_dataset_sql_error_path(study, mssql_database):
     study.setup_from_string(invalid_dataset_definition)
-    with pytest.raises(NameError):
+    with pytest.raises(SystemExit):
         study.dump_dataset_sql()
 
 
