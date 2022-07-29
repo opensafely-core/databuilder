@@ -1,3 +1,5 @@
+import contextlib
+
 import sqlalchemy
 from sqlalchemy.schema import CreateIndex
 from sqlalchemy.sql.functions import Function as SQLFunction
@@ -5,6 +7,7 @@ from sqlalchemy.sql.functions import Function as SQLFunction
 from databuilder import sqlalchemy_types
 from databuilder.query_engines.base_sql import BaseSQLQueryEngine
 from databuilder.query_engines.mssql_dialect import MSSQLDialect, SelectStarInto
+from databuilder.query_engines.mssql_lib import fetch_results_in_batches
 from databuilder.sqlalchemy_utils import GeneratedTable
 
 
@@ -49,3 +52,29 @@ class MSSQLQueryEngine(BaseSQLQueryEngine):
         # The "#" in `intermediate_table_prefix` ensures this is a session-scoped
         # temporary table so there's no explict cleanup needed
         return table
+
+    @contextlib.contextmanager
+    def execute_query(self, variable_definitions):
+        # Use this function to manage storing our results in session-scoped
+        # temporary_tables and downloading
+        # in batches. This gives us the illusion of having a robust
+        # connection to the database, whereas in practice in frequently
+        # errors out when attempting to download large sets of results.
+        setup_queries, results_query, cleanup_queries = self.get_queries(
+            variable_definitions
+        )
+        # We're not expecting to have any cleanup to do here because we should be
+        # using session-scoped temporary tables
+        assert not cleanup_queries
+        with fetch_results_in_batches(
+            engine=self.engine,
+            queries=setup_queries + [results_query],
+            temp_table_prefix="#",
+            # This value was copied from the previous cohortextractor. I
+            # suspect it has no real scientific basis.
+            batch_size=32000,
+            max_retries=2,
+            sleep=0.5,
+            reconnect_on_error=True,
+        ) as results:
+            yield results
